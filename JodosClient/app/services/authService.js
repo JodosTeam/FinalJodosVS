@@ -36,6 +36,13 @@ app.factory('authService', ['$http', '$q', 'localStorageService', 'ngAuthSetting
         });
     };
 
+    var _searchGoogle = function(searchtext) {
+
+        return $http.post(serviceBase + 'api/items/google','"'+searchtext+'"').then(function (results) {
+            return results;
+        });
+    };
+
     var _login = function (loginData) {
        
         var data = "grant_type=password&username=" + loginData.userName + "&password=" + loginData.password;
@@ -106,6 +113,7 @@ app.factory('authService', ['$http', '$q', 'localStorageService', 'ngAuthSetting
     authServiceFactory.fillAuthData = _fillAuthData;
     authServiceFactory.authentication = _authentication;
     authServiceFactory.searchApi = _searchApi;
+    authServiceFactory.searchGoogle = _searchGoogle
     
     return authServiceFactory;
 }]);

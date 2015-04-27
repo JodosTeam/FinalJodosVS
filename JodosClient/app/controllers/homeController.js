@@ -24,4 +24,13 @@ app.controller('homeController', ['$scope', '$location','$http', '$templateCache
             $scope.testProduct = results.data;
         });
     };
+
+        $scope.searchLucky = function(){
+      authService.searchGoogle($scope.searchtext).then(function (results) {
+            $scope.testProduct = results.data;
+             $rootScope.testRoot = results.data;
+            $location.path('/display');
+        });
+    };
+
 }]);

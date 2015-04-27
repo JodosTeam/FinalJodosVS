@@ -12,6 +12,7 @@
     public class MongoContext : IMongoContext
     {
         private readonly MongoCollection<User> userCollection;
+        private readonly MongoCollection<Result> resultCollection;
         private readonly MongoCollection<Role> roleCollection;
         private readonly MongoCollection<Client> clientCollection;
         private readonly MongoCollection<RefreshToken> refreshTokenCollection;
@@ -34,6 +35,7 @@
             Database = server.GetDatabase(mongoUrlBuilder.DatabaseName);
 
             userCollection = Database.GetCollection<User>("users");
+            resultCollection = Database.GetCollection<Result>("results");
             roleCollection = Database.GetCollection<Role>("roles");
             clientCollection = Database.GetCollection<Client>("clients");
             refreshTokenCollection = Database.GetCollection<RefreshToken>("refreshTokens");
@@ -44,6 +46,11 @@
         public MongoCollection<User> Users
         {
             get { return userCollection; }
+        }
+
+        public MongoCollection<Result> Results
+        {
+            get { return resultCollection; }
         }
 
         public MongoCollection<Role> Roles

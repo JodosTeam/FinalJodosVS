@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Text;
+using System.IO;
 
 namespace JodosServer.Controllers
 {
@@ -31,5 +33,15 @@ namespace JodosServer.Controllers
         {
             return Ok(itemsRepository.searchItems(searchText));
         }
+
+        [HttpPost]
+        [Route("google")]
+        public IHttpActionResult SearchGoogle([FromBody]string searchText)
+        {
+            itemsRepository.SearchGoogle(searchText);
+            return Ok();
+        }
+
+       
     }
 }

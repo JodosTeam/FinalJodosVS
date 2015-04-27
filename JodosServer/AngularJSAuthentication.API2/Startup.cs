@@ -20,6 +20,11 @@ namespace JodosServer
     using JodosServer.Repositories;
     using System.Collections.Generic;
     using JodosServer.Models;
+    using RabbitMQ.Client;
+    using RabbitMQ.Client.Events;
+    using System.Text;
+    using System.Threading;
+    using System.Web.Script.Serialization;
 
     public class Startup
     {
@@ -82,6 +87,44 @@ namespace JodosServer
             InitializeData(container);
         }
 
+
+        public static void ReadRabbit(object mongoContext)
+        {
+            
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            {
+                using (var channel = connection.CreateModel())
+                {
+                    channel.QueueDeclare("hello", false, false, false, null);
+
+                    var consumer = new QueueingBasicConsumer(channel);
+                    channel.BasicConsume("hello", true, consumer);
+
+                    while (true)
+                    {
+                        var ea = (BasicDeliverEventArgs)consumer.Queue.Dequeue();
+
+                        var body = ea.Body;
+                        var message = Encoding.UTF8.GetString(body);
+
+                        JavaScriptSerializer jsonSerializer = new JavaScriptSerializer();
+                        Result objResult = jsonSerializer.Deserialize<Result>(message);
+
+                        //insert json to mongo here
+                        ((IMongoContext)mongoContext).Results.Insert(new Result
+                        {
+                            url = objResult.url,
+                            user = objResult.user,
+                            sellsite = "true" //objResult.sellsite
+                        });
+
+                    }
+                }
+            }
+        }
+
+
         private void ConfigureOAuth(IAppBuilder app, IContainer container)
         {
             var OAuthServerOptions = new OAuthAuthorizationServerOptions
@@ -103,76 +146,10 @@ namespace JodosServer
         {
             var mongoContext = container.Resolve<IMongoContext>();
 
-            #region Create Clients
-            if (mongoContext.Clients.Count() == 0)
-            {
-                mongoContext.Clients.Insert(new Client
-                    {
-                        Id = "ngAuthApp",
-                        Secret = Helper.GetHash("abc@123"),
-                        Name = "AngularJS front-end Application",
-                        ApplicationType = Models.ApplicationTypes.JavaScript,
-                        Active = true,
-                        RefreshTokenLifeTime = 7200,
-                        AllowedOrigin = "http://localhost:5948",
-                        //AllowedOrigin = "http://ngauthenticationweb.azurewebsites.net"
-                    });
+            Thread thread = new Thread(new ParameterizedThreadStart(ReadRabbit));
 
-                mongoContext.Clients.Insert(new Client
-                {
-                    Id = "consoleApp",
-                    Secret = Helper.GetHash("123@abc"),
-                    Name = "Console Application",
-                    ApplicationType = Models.ApplicationTypes.NativeConfidential,
-                    Active = true,
-                    RefreshTokenLifeTime = 14400,
-                    AllowedOrigin = "*"
-                });
-            } 
-            #endregion
+            thread.Start(mongoContext);
 
-            #region Create Roles
-            if (mongoContext.Roles.Count() == 0)
-            {
-                mongoContext.Roles.Insert(new Role {
-                    Name = "MoneyResponsible",
-                    Value="אחראי כספים"
-                });
-                mongoContext.Roles.Insert(new Role
-                {
-                    Name = "Ahmash",
-                    Value="אחמ\"ש"
-                });
-                mongoContext.Roles.Insert(new Role
-                {
-                    Name = "Admin",
-                    Value="מנהל"
-                });
-                mongoContext.Roles.Insert(new Role
-                {
-                    Name = "SysAdmin",
-                    Value="מנהל מערכת"
-                });
-            }
-            #endregion
-
-            #region Ceatea Admin User
-            if (mongoContext.Users.Count() == 0)
-            {
-                User user = new User
-                {
-                    UserName = "Admin",
-                    CreateDate = DateTime.Now,
-                    FirstName = "מתן",
-                    LastName = "קדוש"
-                };
-                user.Roles.Add("Admin");
-
-                ApplicationIdentityContext c = new ApplicationIdentityContext(mongoContext);
-                ApplicationUserManager userManager = new ApplicationUserManager(c);
-                userManager.Create(user, "1q2w3e4r");
-            }
-            #endregion
         }
     }
 }

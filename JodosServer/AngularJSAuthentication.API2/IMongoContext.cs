@@ -10,6 +10,7 @@
         MongoDatabase Database { get; }
 
         MongoCollection<User> Users { get; }
+        MongoCollection<Result> Results { get; }
         MongoCollection<Role> Roles { get; }
         MongoCollection<Client> Clients { get; }
         MongoCollection<RefreshToken> RefreshTokens { get; }

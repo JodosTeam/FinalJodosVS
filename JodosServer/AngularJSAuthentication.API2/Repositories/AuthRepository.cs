@@ -130,5 +130,18 @@
         {
             return mongoContext.RefreshTokens.FindAll().ToList();
         }
+
+
+        public bool AddResult(Result result)
+        {
+            mongoContext.Results.Insert(new Result
+            {
+                url = result.url,
+                user = result.user,
+                sellsite = result.sellsite
+            });
+
+            return true;
+        }
     }
 }

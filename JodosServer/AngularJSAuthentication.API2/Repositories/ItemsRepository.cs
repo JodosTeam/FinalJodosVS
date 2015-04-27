@@ -14,6 +14,9 @@
     using System.Net;
     using Newtonsoft.Json;
     using System.Threading;
+    using System.Text;
+    using RabbitMQ.Client;
+    using RabbitMQ.Client.Events;
 
     public class ItemsRepository
     {
@@ -26,20 +29,89 @@
             this.mongoContext = mongoContext;
         }
 
+        public void SearchGoogle(string searchText)
+        {
+            string username = "dani";
+            string url = "https://www.googleapis.com/customsearch/v1?key=AIzaSyAwFxWoXwWNts6fyZpN3cowCb5BXoL0qT4&cx=017135603890338635452:l5ri3atpm-y&q=" + searchText + "&fields=items/link";
+
+            System.Net.WebRequest req = System.Net.WebRequest.Create(url);
+            req.Proxy = WebProxy.GetDefaultProxy();
+            System.Net.WebResponse resp = req.GetResponse();
+            System.IO.StreamReader sr = new System.IO.StreamReader(resp.GetResponseStream());
+
+            JsonSerializerSettings x = new JsonSerializerSettings();
+            x.MissingMemberHandling = MissingMemberHandling.Ignore;
+
+            JodosServer.Models.Google.RootObject retValue = JsonConvert.DeserializeObject<JodosServer.Models.Google.RootObject>(sr.ReadToEnd(), x);
+            List<JodosServer.Models.Google.Item> googleItems = retValue.items;
+
+            StringBuilder sd = new StringBuilder();
+            
+            foreach (var item in googleItems)
+            {
+
+                string Push = "{\"url\":" + "\"" + item.link + "\"" + ",\"user\":" + "\"" + username + "\"" + "}";
+                PushRabbit(Push);
+            }
+
+        }
+
+        public static void PushRabbit(string message)
+        {
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            {
+                using (var channel = connection.CreateModel())
+                {
+                    channel.QueueDeclare("hello", false, false, false, null);
+
+                    
+                    var body = Encoding.UTF8.GetBytes(message);
+
+                    channel.BasicPublish("", "hello", null, body);
+                }
+            }
+        }
+
+        public static void ReadRabbit()
+        {
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            {
+                using (var channel = connection.CreateModel())
+                {
+                    channel.QueueDeclare("hello", false, false, false, null);
+
+                    var consumer = new QueueingBasicConsumer(channel);
+                    channel.BasicConsume("hello", true, consumer);
+
+                    Console.WriteLine(" [*] Waiting for messages." +
+                                             "To exit press CTRL+C");
+                    while (true)
+                    {
+                        var ea = (BasicDeliverEventArgs)consumer.Queue.Dequeue();
+
+                        var body = ea.Body;
+                        var message = Encoding.UTF8.GetString(body);
+                        
+                    }
+                }
+            }
+        }
+
+        
+
         public List<FinalItem> searchItems(string searchText)
         {
+
+            callAli("iphone");
             FinalList = new List<FinalItem>();
             List<Thread> threads = new List<Thread>();
 
             //threads.Add(new Thread(new ParameterizedThreadStart(ItemsRepository.callAli)));
             threads.Add(new Thread(new ParameterizedThreadStart(ItemsRepository.callEbay)));
-            threads.Add(new Thread(new ParameterizedThreadStart(ItemsRepository.callAmazon)));
-       
-         //   t1.Start(searchText);
-          //  t2.Start(searchText);
-        
-          //  t1.Join();
-          //  t2.Join();
+            threads.Add(new Thread(new ParameterizedThreadStart(ItemsRepository.callAli)));
+
 
 
             foreach (var thread in threads)
@@ -52,46 +124,6 @@
             }
         
             return FinalList;
-        }
-
-        private static void callAmazon(object textIn)
-        {
-            string searchText = System.Web.HttpUtility.HtmlEncode(textIn);
-
-            string url = "https://www.kimonolabs.com/api/ondemand/20l8pw8y?apikey=2JUxiAvx1KNCoUrS7tSqmd18WXDG6eFo&field-keywords=";
-            url += searchText;
-
-
-            System.Net.WebRequest req = System.Net.WebRequest.Create(url);
-            req.Proxy = WebProxy.GetDefaultProxy();
-            System.Net.WebResponse resp = req.GetResponse();
-            System.IO.StreamReader sr = new System.IO.StreamReader(resp.GetResponseStream());
-
-            JsonSerializerSettings x = new JsonSerializerSettings();
-            x.MissingMemberHandling = MissingMemberHandling.Ignore;
-
-            JodosServer.Models.Amazon.RootObject retValue = JsonConvert.DeserializeObject<JodosServer.Models.Amazon.RootObject>(sr.ReadToEnd(), x);
-
-            List<JodosServer.Models.Amazon.Collection1> aliItems = retValue.results.collection1;
-
-            foreach (var item in aliItems)
-            {
-                if (item.name.href != string.Empty)
-                {
-                    FinalItem temp = new FinalItem();
-
-                    temp.ItemUrl = item.name.href;
-                    temp.ImageUrl = item.pic.src;
-                    temp.ItemPrice = item.price.text;
-                    if (item.freeship != string.Empty)
-                        temp.ShippingPrice = "0";
-                    else
-                        temp.ShippingPrice = "Unknown";
-                    temp.Name = item.name.text;
-                    temp.Source = "Amazon";
-                    FinalList.Add(temp);
-                }
-            }
         }
 
         private static void callEbay(object textIn)
@@ -150,14 +182,18 @@
             }
         }
 
-        public static void callAli(object text)
+
+
+        private static void callAli(object textIn)
         {
-            string searchText = text.ToString();
+            string searchText = textIn.ToString();
+
             searchText = System.Web.HttpUtility.HtmlEncode(searchText);
 
-            string url = "https://www.kimonolabs.com/api/ondemand/ais11kdy?apikey=2JUxiAvx1KNCoUrS7tSqmd18WXDG6eFo&SearchText=";
-            url += searchText;
-
+            string url = "http://gw.api.alibaba.com/openapi/param2/2/portals.open/api.listPromotionProduct/71307?"
+             + "keywords=" + searchText
+             + "&fields=productTitle,productUrl,salePrice,imageUrl"
+             + "&pageSize=10&sort=sellerRateDown";
 
             System.Net.WebRequest req = System.Net.WebRequest.Create(url);
             req.Proxy = WebProxy.GetDefaultProxy();
@@ -168,29 +204,12 @@
             x.MissingMemberHandling = MissingMemberHandling.Ignore;
 
             JodosServer.Models.Ali.RootObject retValue = JsonConvert.DeserializeObject<JodosServer.Models.Ali.RootObject>(sr.ReadToEnd(), x);
+            List<JodosServer.Models.Ali.Product> alitems = retValue.result.products;
 
-            List<JodosServer.Models.Ali.Collection1> aliItems = retValue.results.collection1;
-
-            foreach (var item in aliItems)
+            foreach (var item in alitems)
             {
-                if (item.property2.href != string.Empty)
-                {
-                    FinalItem temp = new FinalItem();
-
-                    temp.ItemUrl = item.property2.href;
-                    temp.ImageUrl = "TODO: Add picture";
-                    temp.ItemPrice = item.property3;
-                    if (item.property4 != string.Empty)
-                        temp.ShippingPrice = "0";
-                    else
-                        temp.ShippingPrice = item.property5;
-                    temp.Name = item.property2.text;
-                    temp.Source = "Ali";
-                    FinalList.Add(temp);
-
-                }
+                
             }
-
         }
     }
 }
