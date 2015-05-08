@@ -32,7 +32,7 @@
         public void SearchGoogle(string searchText)
         {
             string username = "dani";
-            string url = "https://www.googleapis.com/customsearch/v1?key=AIzaSyAwFxWoXwWNts6fyZpN3cowCb5BXoL0qT4&cx=017135603890338635452:l5ri3atpm-y&q=" + searchText + "&fields=items/link";
+            string url = "https://www.googleapis.com/customsearch/v1?key=AIzaSyAwFxWoXwWNts6fyZpN3cowCb5BXoL0qT4&cx=017135603890338635452:l5ri3atpm-y&q=" +"buy "+searchText + "&fields=items/link";
 
             System.Net.WebRequest req = System.Net.WebRequest.Create(url);
             req.Proxy = WebProxy.GetDefaultProxy();
@@ -52,6 +52,7 @@
 
                 string Push = "{\"url\":" + "\"" + item.link + "\"" + ",\"user\":" + "\"" + username + "\"" + "}";
                 PushRabbit(Push);
+                PushRabbit2(item.link);
             }
 
         }
@@ -73,6 +74,23 @@
             }
         }
 
+        public static void PushRabbit2(string message)
+        {
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            {
+                using (var channel = connection.CreateModel())
+                {
+                    //channel.QueueDeclare("TEST1", false, false, false, null);
+
+
+                    var body = Encoding.UTF8.GetBytes(message);
+
+                    channel.BasicPublish("", "TEST1", null, body);
+                }
+            }
+        }
+
         public static void ReadRabbit()
         {
             var factory = new ConnectionFactory() { HostName = "localhost" };
@@ -85,8 +103,6 @@
                     var consumer = new QueueingBasicConsumer(channel);
                     channel.BasicConsume("hello", true, consumer);
 
-                    Console.WriteLine(" [*] Waiting for messages." +
-                                             "To exit press CTRL+C");
                     while (true)
                     {
                         var ea = (BasicDeliverEventArgs)consumer.Queue.Dequeue();

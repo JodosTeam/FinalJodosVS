@@ -116,7 +116,7 @@ namespace JodosServer
                         {
                             url = objResult.url,
                             user = objResult.user,
-                            sellsite = "true" //objResult.sellsite
+                            sellsite = "" //objResult.sellsite
                         });
 
                     }

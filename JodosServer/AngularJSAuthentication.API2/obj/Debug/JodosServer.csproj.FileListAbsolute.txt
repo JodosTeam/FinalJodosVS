@@ -175,6 +175,6 @@ C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\bin\System.Web.H
 C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\bin\System.Web.Http.Owin.xml
 C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\bin\System.Web.Http.WebHost.xml
 C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\bin\Newtonsoft.Json.xml
-C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\obj\Debug\JodosServer.csprojResolveAssemblyReference.cache
 C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\obj\Debug\JodosServer.dll
 C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\obj\Debug\JodosServer.pdb
+C:\Finals\FinalJodosVS\JodosServer\AngularJSAuthentication.API2\obj\Debug\JodosServer.csprojResolveAssemblyReference.cache

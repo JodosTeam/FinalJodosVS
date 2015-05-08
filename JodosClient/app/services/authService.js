@@ -26,7 +26,7 @@ app.factory('authService', ['$http', '$q', 'localStorageService', 'ngAuthSetting
 
     };
 
-    var url = 'https://www.googleapis.com/customsearch/v1?key=AIzaSyAwFxWoXwWNts6fyZpN3cowCb5BXoL0qT4&cx=017135603890338635452:6y5bim-ajlo&fields=items/title,items/link,items/pagemap/offer&q=';
+    var url = 'https://www.googleapis.com/customsearch/v1?key=AIzaSyAwFxWoXwWNts6fyZpN3cowCb5BXoL0qT4&cx=017135603890338635452:l5ri3atpm-y&fields=items/title,items/link,items/pagemap/offer&q=';
     
     var _searchApi = function(searchtext) {
 

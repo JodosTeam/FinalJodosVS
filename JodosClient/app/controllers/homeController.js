@@ -2,7 +2,7 @@
 app.controller('homeController', ['$scope', '$location','$http', '$templateCache', 'authService','$rootScope', function ($scope, $location,$http ,$templateCache,authService,$rootScope) {
 
 
-    $scope.searchtext = 'iphone';
+    $scope.searchtext = 'nexus';
     $scope.message ='';
     $scope.test = [];
     $scope.testProduct = [];
